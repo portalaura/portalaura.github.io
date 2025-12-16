@@ -1,7 +1,2 @@
-import csv
-file=open("test.csv", "r")
-
-details=csv.reader(file)
-
-for rec in details:
-    print(rec)
+a = int(input("enter a number: "))
+print("even" if a % 2 == 0 else "odd")
