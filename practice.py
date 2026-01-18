@@ -13,7 +13,7 @@ def get_response(user_input):
 
 def main():
     print("simple chatbot")
-    print("what to do")
+    print("what to make the bot to do")
 
     while True:
         user_input = input("You: ")
