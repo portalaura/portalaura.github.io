@@ -14,4 +14,20 @@ print("sum of elements in tuple= ", sum(t))
 print("average of the elements of the tuple", Average)
 print("sorted tuple= ", t)">
 <button onclick="copyText()">cs 16</button>
+  <script>
+function copyText() {
+// Get the input element
+let copyField = document.getElementById("myInput");
+
+// Select the text
+copyField.select();
+copyField.setSelectionRange(0, 99999); // For mobile devices
+
+// Copy the text to clipboard
+navigator.clipboard.writeText(copyField.value)
+.then(() => alert("Copied: " + copyField.value))
+.catch(err => console.error("Failed to copy: ", err));
+}
+</script>
+
 </html>
