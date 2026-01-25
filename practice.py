@@ -1,5 +1,3 @@
-import random
-
 def get_response(user_input):
     user_input = user_input.lower()
     if "hello" in user_input:
@@ -12,7 +10,7 @@ def get_response(user_input):
         return "i didnt understand that"
 
 def main():
-    print("simple chatbot")
+    print("welcome to simple chatbot")
     print("what to make the bot to do")
 
     while True:
