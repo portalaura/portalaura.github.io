@@ -135,3 +135,4 @@ def predict_disease(input_symptoms):
     }
 
 print(predict_disease("skin_rash,fever,headache"))
+print("Program finished")
