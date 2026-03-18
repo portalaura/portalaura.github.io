@@ -1,137 +1,67 @@
-import numpy as np
 import pandas as pd
-from scipy.stats import mode
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-from imblearn.over_sampling import RandomOverSampler
-data = pd.read_csv('/content/improved_disease_dataset.csv')
+from sklearn.metrics import accuracy_score, classification_report
+import sys
 
-encoder = LabelEncoder()
-data["disease"] = encoder.fit_transform(data["disease"])
-
-X = data.iloc[:, :-1]
-y = data.iloc[:, -1]
-
-plt.figure(figsize=(18, 8))
-sns.countplot(x=y)
-plt.title("Disease Class Distribution Before Resampling")
-plt.xticks(rotation=90)
-plt.show()
-
-ros = RandomOverSampler(random_state=42)
-X_resampled, y_resampled = ros.fit_resample(X, y)
-if 'gender' in X_resampled.columns:
-    le = LabelEncoder()
-    X_resampled['gender'] = le.fit_transform(X_resampled['gender'])
-
-X_resampled = X_resampled.fillna(0)
-
-if len(y_resampled.shape) > 1:
-    y_resampled = y_resampled.values.ravel()
-
-models = {
-    "Decision Tree": DecisionTreeClassifier(),
-    "Random Forest": RandomForestClassifier(),
-    "SVM": SVC()
+# -----------------------------
+# 1. Sample dataset creation
+# -----------------------------
+# In real use, load from CSV: pd.read_csv("disease_dataset.csv")
+data = {
+    'fever': [1, 0, 1, 0, 1, 0],
+    'cough': [1, 1, 0, 0, 1, 0],
+    'fatigue': [1, 0, 1, 0, 0, 1],
+    'headache': [0, 1, 1, 0, 0, 1],
+    'disease': ['Flu', 'Cold', 'Flu', 'Healthy', 'Flu', 'Healthy']
 }
 
-cv_scoring = 'accuracy'  # you can also use 'f1_weighted', 'roc_auc_ovr' for multi-class
-stratified_kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+df = pd.DataFrame(data)
 
-for model_name, model in models.items():
+# -----------------------------
+# 2. Features & Labels
+# -----------------------------
+X = df.drop('disease', axis=1)
+y = df['disease']
+
+# -----------------------------
+# 3. Train-Test Split
+# -----------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# -----------------------------
+# 4. Model Training
+# -----------------------------
+model = DecisionTreeClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# -----------------------------
+# 5. Model Evaluation
+# -----------------------------
+y_pred = model.predict(X_test)
+print("Model Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# -----------------------------
+# 6. Prediction Function
+# -----------------------------
+def predict_disease(fever, cough, fatigue, headache):
     try:
-        scores = cross_val_score(
-            model,
-            X_resampled,
-            y_resampled,
-            cv=stratified_kfold,
-            scoring=cv_scoring,
-            n_jobs=-1,
-            error_score='raise' 
-        )
-        print("=" * 50)
-        print(f"Model: {model_name}")
-        print(f"Scores: {scores}")
-        print(f"Mean Accuracy: {scores.mean():.4f}")
+        # Ensure inputs are binary (0 or 1)
+        for val in [fever, cough, fatigue, headache]:
+            if val not in [0, 1]:
+                raise ValueError("All symptom values must be 0 or 1.")
+        
+        prediction = model.predict([[fever, cough, fatigue, headache]])
+        return prediction[0]
     except Exception as e:
-        print("=" * 50)
-        print(f"Model: {model_name} failed with error:")
-        print(e)
-svm_model = SVC()
-svm_model.fit(X_resampled, y_resampled)
-svm_preds = svm_model.predict(X_resampled)
+        return f"Error: {e}"
 
-cf_matrix_svm = confusion_matrix(y_resampled, svm_preds)
-plt.figure(figsize=(12, 8))
-sns.heatmap(cf_matrix_svm, annot=True, fmt="d")
-plt.title("Confusion Matrix for SVM Classifier")
-plt.show()
-
-print(f"SVM Accuracy: {accuracy_score(y_resampled, svm_preds) * 100:.2f}%")
-nb_model = GaussianNB()
-nb_model.fit(X_resampled, y_resampled)
-nb_preds = nb_model.predict(X_resampled)
-
-cf_matrix_nb = confusion_matrix(y_resampled, nb_preds)
-plt.figure(figsize=(12, 8))
-sns.heatmap(cf_matrix_nb, annot=True, fmt="d")
-plt.title("Confusion Matrix for Naive Bayes Classifier")
-plt.show()
-
-print(f"Naive Bayes Accuracy: {accuracy_score(y_resampled, nb_preds) * 100:.2f}%")
-rf_model = RandomForestClassifier(random_state=42)
-rf_model.fit(X_resampled, y_resampled)
-rf_preds = rf_model.predict(X_resampled)
-
-cf_matrix_rf = confusion_matrix(y_resampled, rf_preds)
-plt.figure(figsize=(12, 8))
-sns.heatmap(cf_matrix_rf, annot=True, fmt="d")
-plt.title("Confusion Matrix for Random Forest Classifier")
-plt.show()
-
-print(f"Random Forest Accuracy: {accuracy_score(y_resampled, rf_preds) * 100:.2f}%")
-from statistics import mode
-
-final_preds = [mode([i, j, k]) for i, j, k in zip(svm_preds, nb_preds, rf_preds)]
-
-cf_matrix_combined = confusion_matrix(y_resampled, final_preds)
-plt.figure(figsize=(12, 8))
-sns.heatmap(cf_matrix_combined, annot=True, fmt="d")
-plt.title("Confusion Matrix for Combined Model")
-plt.show()
-
-print(f"Combined Model Accuracy: {accuracy_score(y_resampled, final_preds) * 100:.2f}%")
-symptoms = X.columns.values
-symptom_index = {symptom: idx for idx, symptom in enumerate(symptoms)}
-
-def predict_disease(input_symptoms):
-    input_symptoms = input_symptoms.split(",")
-    input_data = [0] * len(symptom_index)
-    
-    for symptom in input_symptoms:
-        if symptom in symptom_index:
-            input_data[symptom_index[symptom]] = 1
-
-    input_df = pd.DataFrame([input_data], columns=symptoms)
-
-    rf_pred = encoder.classes_[rf_model.predict(input_df)[0]]
-    nb_pred = encoder.classes_[nb_model.predict(input_df)[0]]
-    svm_pred = encoder.classes_[svm_model.predict(input_df)[0]]
-
-    final_pred = mode([rf_pred, nb_pred, svm_pred])
-    
-    return {
-        "Random Forest Prediction": rf_pred,
-        "Naive Bayes Prediction": nb_pred,
-        "SVM Prediction": svm_pred,
-        "Final Prediction": final_pred
-    }
-
-print(predict_disease("skin_rash,fever,headache"))
+# -----------------------------
+# 7. Example Prediction
+# -----------------------------
+print("\nExample Prediction:")
+print("Symptoms: fever=1, cough=1, fatigue=0, headache=0")
+print("Predicted Disease:", predict_disease(1, 1, 0, 0))
