@@ -2,7 +2,7 @@ import os
 import platform
 import mysql.connector
 
-mydb=mysql.connector.connect(host="localhost",user="root",passwd="root",database="sms",charset="utf8")
+mydb=mysql.connector.connect(host="localhost",user="root",passwd="",database="sms",charset="utf8")
 mycursor=mydb.cursor()
 
 #MODULE FOR NEW ADMISSION
@@ -95,6 +95,7 @@ def reportCardAllStudent () :
     
 #MODULE TO GENERATE REPORT CARD OF ONE STUDENTS
 def reportCardOneStudent():
+    mycursor=mydb.cursor()
     admission_no=input("ENTER ADMISSION NO OF THE STUDENT :")
   
     sql="SELECT * FROM MARKS WHERE SADMISSION_NO= %s"
